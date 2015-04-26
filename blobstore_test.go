@@ -1,4 +1,4 @@
-package blobserver
+package blobstore
 
 import (
 	"bytes"
@@ -27,11 +27,14 @@ var testData = []struct {
 
 // TestFilePaths checks that the hash calculus and the hash file path as correct as expected
 func TestFilePaths(t *testing.T) {
+	// setup
+	fb := fileBlobs{""}
+	// exercise
 	for _, testCase := range testData {
 		key := blobKey(sha1.New(), ([]byte)(testCase.input))
 		assert(key.Equals(toKeyOrDie(t, testCase.expectedHash)), t,
 			"Input's '%s' expected hash was %s but got %s!", testCase.input, testCase.expectedHash, key)
-		path := buildFilename("", key)
+		path := fb.Keyname(key)
 		assert(path == testCase.expectedPath, t,
 			"Input's '%s' with hash:\n%s\nexpected path was:\n%s\nBut got:\n%s",
 			testCase.input, key, testCase.expectedPath, path)
@@ -63,9 +66,9 @@ func TestCheckedReader(t *testing.T) {
 func TestReadsNWrites(t *testing.T) {
 	// setup
 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
-	dir := buildTmpFilename("")
+	dir := fileBlobs{""}.TmpKeyname(10)
 	os.Mkdir(dir, 0700)
-	fileBlobs := FileBlobServer{dir, crypto.SHA1}
+	fileBlobs := NewFileBlobStoreAdmin(dir, crypto.SHA1)
 	// exercise
 	for _, testCase := range testData {
 		expectedKey := toKeyOrDie(t, testCase.expectedHash)
@@ -106,9 +109,9 @@ func TestReadsNWrites(t *testing.T) {
 func TestList(t *testing.T) {
 	// setup
 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
-	dir := buildTmpFilename("")
+	dir := fileBlobs{""}.TmpKeyname(10)
 	os.Mkdir(dir, 0700)
-	fileBlobs := FileBlobServer{dir, crypto.SHA1}
+	fileBlobs := NewFileBlobStore(dir, crypto.SHA1)
 	expectedKeys := buildExpectedKeysList()
 	// exercise
 	for _, testCase := range testData {
@@ -118,8 +121,8 @@ func TestList(t *testing.T) {
 		assert(err == nil, t, "Error writing blob %s:%s", testCase.expectedHash, err)
 		assert(key.Equals(expectedKey), t, "Expected blob key to be %s but got %s", testCase.expectedHash, key)
 	}
-	blobKeys, err := fileBlobs.List()
-	assert(err == nil, t, "Error calling List: %s", err)
+	blobKeys := fileBlobs.List()
+	assert(blobKeys != nil, t, "Error calling List: nil blobKeys returned")
 	i := 0
 	for blobKey := range blobKeys {
 		assert(blobKey.err == nil, t, "Error in List stream: %s", blobKey.err)
@@ -129,7 +132,7 @@ func TestList(t *testing.T) {
 	}
 	// cleanup
 	// Remove the root for the blob store filesystem
-	err = os.RemoveAll(dir)
+	err := os.RemoveAll(dir)
 	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
 }
 
