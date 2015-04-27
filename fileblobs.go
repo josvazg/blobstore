@@ -1,15 +1,3 @@
-/*
-Package blobserver a Content Addressed basic service definition an implementation
-
-The normal BlobStore user interface allows just to:
-- Read a blob or stream of bytes given its content based hash key (for instance SHA-1 of all the bytes)
-- Writes a blob and get its content based hash key back (used for later retrieval)
-- Enumerate the available blobs (identified by key)
-
-For administration an extended interface is provided at also allows to:
-- Remove a blob by hash key
-
-*/
 package blobstore
 
 import (
@@ -24,6 +12,7 @@ import (
 
 const (
 	DEFAULT_OPEN_PERMS = 0750
+	VFS_ROOT           = ""
 )
 
 // NewFileBlobServer returns a VFSBlobServer using a fileBlobs, that is on top of the os files
@@ -41,7 +30,7 @@ func (vfs fileBlobs) Open(key string) (io.ReadCloser, error) {
 	return os.Open(key)
 }
 
-// Create a file to write a key´s contents for the first time
+// Create a file to write a key's contents for the first time
 func (vfs fileBlobs) Create(key string) (io.WriteCloser, error) {
 	return os.OpenFile(key, os.O_CREATE|os.O_WRONLY, DEFAULT_OPEN_PERMS)
 }
@@ -66,8 +55,13 @@ func (vfs fileBlobs) Rename(oldkey, newkey string) error {
 	return err
 }
 
-// List all present keys in sort order to the keys channel
-func (vfs fileBlobs) ListTo(keys chan<- KeyOrError, acceptor func(string) Key, dir string) bool {
+// ListTo lists all present keys in sort order to the keys channel
+func (vfs fileBlobs) ListTo(keys chan<- KeyOrError, acceptor func(string) Key) bool {
+	return vfs.listTo(keys, acceptor, VFS_ROOT)
+}
+
+// listTo is the internal recursive implementation of ListTo list key names from recursive directories
+func (vfs fileBlobs) listTo(keys chan<- KeyOrError, acceptor func(string) Key, dir string) bool {
 	if dir == VFS_ROOT { // start at the root dir
 		dir = vfs.dir
 	}
@@ -85,7 +79,7 @@ func (vfs fileBlobs) ListTo(keys chan<- KeyOrError, acceptor func(string) Key, d
 		for _, fileInfo := range fileInfos {
 			if fileInfo.IsDir() { // If it is a dir...
 				// List tha branch, but fail the pipeline if that returns false (=failure)
-				if !vfs.ListTo(keys, acceptor, filepath.Join(dir, fileInfo.Name())) {
+				if !vfs.listTo(keys, acceptor, filepath.Join(dir, fileInfo.Name())) {
 					return false // give up if the subtree failed
 				}
 			} else { // If it is Not a directory but a file...

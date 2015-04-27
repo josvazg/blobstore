@@ -41,6 +41,42 @@ func TestFilePaths(t *testing.T) {
 	}
 }
 
+// TestMemKeynames checks that the hash calculus and the hash keynaming in-memory is correct as expected
+func TestMemKeynames(t *testing.T) {
+	// setup
+	mb := newMemBlobs()
+	// exercise
+	for _, testCase := range testData {
+		key := blobKey(sha1.New(), ([]byte)(testCase.input))
+		assert(key.Equals(toKeyOrDie(t, testCase.expectedHash)), t,
+			"Input's '%s' expected hash was %s but got %s!", testCase.input, testCase.expectedHash, key)
+		keyname := mb.Keyname(key)
+		assert(keyname == testCase.expectedHash, t,
+			"Input's '%s' expected keyname was:\n%s\nBut got:\n%s", testCase.input, testCase.expectedHash, keyname)
+	}
+}
+
+// TestOrdering checks the insert and extract methods of memBlob
+func TestOrdering(t *testing.T) {
+	// setup
+	mb := newMemBlobs()
+	strings := []string{"zz", "fox", "elephant", "antilope", "frog", "zebra", "cocodrile"}
+	// exercise
+	for i, s := range strings {
+		mb.insert(s)
+		assert(sort.StringsAreSorted(mb.keynames), t, "insert did not order %s into %v", s, mb.keynames)
+		assert(len(mb.keynames) == (i+1), t, "expected growed size %d but got %d", (i + 1), len(mb.keynames))
+	}
+	for i, s := range strings {
+		mb.extract(s)
+		assert(sort.StringsAreSorted(mb.keynames), t, "extract broke order removing %s from %v", s, mb.keynames)
+		expectedSize := len(strings) - i - 1
+		assert(len(mb.keynames) == expectedSize, t,
+			"expected shrinked size %d but got %d", expectedSize, len(mb.keynames))
+	}
+
+}
+
 // TestCheckedReader makes sure CheckedReader is doing its job as expected
 func TestCheckedReader(t *testing.T) {
 	for _, testCase := range testData {
@@ -62,51 +98,64 @@ func TestCheckedReader(t *testing.T) {
 	}
 }
 
-// TestReadsNWrites test that the persistent blobserver does its reads and writes as expected
-func TestReadsNWrites(t *testing.T) {
+// TestFileReadsNWrites test that the persistent blobserver does its reads and writes as expected
+func TestFileReadsNWrites(t *testing.T) {
 	// setup
 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
 	dir := fileBlobs{""}.TmpKeyname(10)
 	os.Mkdir(dir, 0700)
 	fileBlobs := NewFileBlobStoreAdmin(dir, crypto.SHA1)
 	// exercise
-	for _, testCase := range testData {
-		expectedKey := toKeyOrDie(t, testCase.expectedHash)
-		// 1 read must fail
-		_, err := fileBlobs.Read(expectedKey)
-		assert(err != nil, t, "Reading %s should had failed!", testCase.expectedHash)
-		assert(!strings.Contains(err.Error(), "bytes long hash key"), t,
-			"Error type when reading %s:%v", testCase.expectedHash, err)
-		// 2 write must succeed and key must match
-		key, err := fileBlobs.Write(strings.NewReader(testCase.input))
-		assert(err == nil, t, "Error writing blob %s:%s", testCase.expectedHash, err)
-		assert(key.Equals(expectedKey), t, "Expected blob key to be %s but got %s", testCase.expectedHash, key)
-		// 3 read must now succeed
-		reader, err := fileBlobs.Read(key)
-		assert(err == nil, t, "Error fetching %s: %v", key, err)
-		blobBytes, err := ioutil.ReadAll(reader)
-		assert(err == nil, t, "Error reading %s: %v", key, err)
-		assert(bytes.Compare(blobBytes, []byte(testCase.input)) == 0, t,
-			"Expected to read '%s' but got '%s'", testCase.input, blobBytes)
-		// 4 writing again must succeed and key must match all over again
-		key, err = fileBlobs.Write(strings.NewReader(testCase.input))
-		assert(err == nil, t, "Error writing blob %s:%s", testCase.expectedHash, err)
-		assert(key.Equals(expectedKey), t, "Expected blob key to be %s but got %s", testCase.expectedHash, key)
-		// 5 remove must succeed
-		err = fileBlobs.Remove(key)
-		assert(err == nil, t, "Error removing %s: %v", key, err)
-		// 6 read must now fail
-		err = fileBlobs.Remove(key)
-		assert(err == nil, t, "Error removing %s: %v", key, err)
-	}
+	readsNWrites(t, fileBlobs)
 	// cleanup
 	// Remove the root for the blob store filesystem
 	err := os.RemoveAll(dir)
 	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
 }
 
-// TestList test that the list call returns all stored keys as expected
-func TestList(t *testing.T) {
+// TestMemReadsNWrites test that the in-memory blobserver does its reads and writes as expected
+func TestMemReadsNWrites(t *testing.T) {
+	// setup
+	memBlobs := NewMemBlobStoreAdmin(crypto.SHA1)
+	// exercise
+	readsNWrites(t, memBlobs)
+}
+
+// readsNWrites exercises a read, write, read, write, remove, read sequence from testData into a BlobStoreAdmin
+func readsNWrites(t *testing.T, blobs BlobStoreAdmin) {
+	for _, testCase := range testData {
+		expectedKey := toKeyOrDie(t, testCase.expectedHash)
+		// 1 read must fail
+		_, err := blobs.Read(expectedKey)
+		assert(err != nil, t, "Reading %s should had failed!", testCase.expectedHash)
+		assert(!strings.Contains(err.Error(), "bytes long hash key"), t,
+			"Error type when reading %s:%v", testCase.expectedHash, err)
+		// 2 write must succeed and key must match
+		key, err := blobs.Write(strings.NewReader(testCase.input))
+		assert(err == nil, t, "Error writing blob %s:%s", testCase.expectedHash, err)
+		assert(key.Equals(expectedKey), t, "Expected blob key to be %s but got %s", testCase.expectedHash, key)
+		// 3 read must now succeed
+		reader, err := blobs.Read(key)
+		assert(err == nil, t, "Error fetching %s: %v", key, err)
+		blobBytes, err := ioutil.ReadAll(reader)
+		assert(err == nil, t, "Error reading %s: %v", key, err)
+		assert(bytes.Compare(blobBytes, []byte(testCase.input)) == 0, t,
+			"Expected to read '%s' but got '%s'", testCase.input, blobBytes)
+		// 4 writing again must succeed and key must match all over again
+		key, err = blobs.Write(strings.NewReader(testCase.input))
+		assert(err == nil, t, "Error writing blob %s:%s", testCase.expectedHash, err)
+		assert(key.Equals(expectedKey), t, "Expected blob key to be %s but got %s", testCase.expectedHash, key)
+		// 5 remove must succeed
+		err = blobs.Remove(key)
+		assert(err == nil, t, "Error removing %s: %v", key, err)
+		// 6 read must now fail
+		err = blobs.Remove(key)
+		assert(err == nil, t, "Error removing %s: %v", key, err)
+	}
+}
+
+// TestFileList test that the persistent list call returns all stored keys as expected
+func TestFileList(t *testing.T) {
 	// setup
 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
 	dir := fileBlobs{""}.TmpKeyname(10)
@@ -114,14 +163,32 @@ func TestList(t *testing.T) {
 	fileBlobs := NewFileBlobStore(dir, crypto.SHA1)
 	expectedKeys := buildExpectedKeysList()
 	// exercise
+	listChecks(t, expectedKeys, fileBlobs)
+	// cleanup
+	// Remove the root for the blob store filesystem
+	err := os.RemoveAll(dir)
+	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
+}
+
+// TestMemList test that the in-memory list call returns all stored keys as expected
+func TestMemList(t *testing.T) {
+	// setup
+	memBlobs := NewMemBlobStoreAdmin(crypto.SHA1)
+	expectedKeys := buildExpectedKeysList()
+	// exercise
+	listChecks(t, expectedKeys, memBlobs)
+}
+
+// listChecks execises the lists over a BlobStore
+func listChecks(t *testing.T, expectedKeys []string, blobs BlobStore) {
 	for _, testCase := range testData {
 		expectedKey := toKeyOrDie(t, testCase.expectedHash)
 		// 1 write must succeed and key must match
-		key, err := fileBlobs.Write(strings.NewReader(testCase.input))
+		key, err := blobs.Write(strings.NewReader(testCase.input))
 		assert(err == nil, t, "Error writing blob %s:%s", testCase.expectedHash, err)
 		assert(key.Equals(expectedKey), t, "Expected blob key to be %s but got %s", testCase.expectedHash, key)
 	}
-	blobKeys := fileBlobs.List()
+	blobKeys := blobs.List()
 	assert(blobKeys != nil, t, "Error calling List: nil blobKeys returned")
 	i := 0
 	for blobKey := range blobKeys {
@@ -130,10 +197,6 @@ func TestList(t *testing.T) {
 		assert(key == expectedKeys[i], t, "Next expected key in list was %s, but got %s", expectedKeys[i], key)
 		i++
 	}
-	// cleanup
-	// Remove the root for the blob store filesystem
-	err := os.RemoveAll(dir)
-	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
 }
 
 // buildExpectedKeysList builds a ordered expected list of keys from testData
@@ -174,6 +237,6 @@ func blobKey(h hash.Hash, blob []byte) Key {
 // assert is a helper function for test assertions
 func assert(assertion bool, t *testing.T, format string, args ...interface{}) {
 	if !assertion {
-		t.Fatalf(format, args)
+		t.Fatalf(format, args...)
 	}
 }

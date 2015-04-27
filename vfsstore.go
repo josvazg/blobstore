@@ -7,11 +7,7 @@ import (
 	"io"
 )
 
-const (
-	VFS_ROOT = ""
-)
-
-// VFS blob server implements a BlobServer on a Virtual Filesystem (VirtualFS)
+// VFS blob server implements a generic BlobServer on a Virtual Filesystem (VirtualFS)
 type VFSBlobServer struct {
 	VirtualFS
 	hash crypto.Hash
@@ -30,7 +26,7 @@ type VirtualFS interface {
 	// Rename a key, usually only used once, when the contents are done writting and the correspoding hash key is known
 	Rename(oldkeyname, newkeyname string) error
 	// List all present keys in sort order to the keys channel as filtered by acceptor
-	ListTo(keys chan<- KeyOrError, acceptor func(string) Key, dir string) bool
+	ListTo(keys chan<- KeyOrError, acceptor func(string) Key) bool
 	// Keyname returns a keyname full path of where the key blob should be placed
 	Keyname(key Key) string
 	// Tmpkeyname returns a temporary filename
@@ -78,7 +74,7 @@ func (vbs *VFSBlobServer) Write(blob io.Reader) (Key, error) {
 func (vbs *VFSBlobServer) List() <-chan KeyOrError {
 	keys := make(chan KeyOrError)
 	go func() {
-		if vbs.ListTo(keys, vbs.acceptor, VFS_ROOT) {
+		if vbs.ListTo(keys, vbs.acceptor) {
 			// if the return is true, keys channel is still open and we must close it here
 			close(keys)
 		}

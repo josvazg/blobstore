@@ -62,12 +62,22 @@ type BlobStoreAdmin interface {
 	Remove(key Key) error
 }
 
-// NewFileBlobStore returns a VFSBlobServer using a fileBlobs as a BlobStore
+// NewFileBlobStore returns a files BlobStore
 func NewFileBlobStore(dir string, hash crypto.Hash) BlobStore {
 	return NewFileBlobServer(dir, hash)
 }
 
-// NewFileBlobStore returns a VFSBlobServer using a fileBlobs as a BlobStoreAdmin
+// NewFileBlobStore returns a files BlobStoreAdmin
 func NewFileBlobStoreAdmin(dir string, hash crypto.Hash) BlobStoreAdmin {
 	return NewFileBlobServer(dir, hash)
+}
+
+// NewMemBlobStore returns a files BlobStore
+func NewMemBlobStore(hash crypto.Hash) BlobStore {
+	return NewMemBlobServer(hash)
+}
+
+// NewMemBlobStore returns a files BlobStoreAdmin
+func NewMemBlobStoreAdmin(hash crypto.Hash) BlobStoreAdmin {
+	return NewMemBlobServer(hash)
 }
