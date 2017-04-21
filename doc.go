@@ -53,9 +53,9 @@ type BlobStore interface {
 	List() <-chan KeyOrError
 }
 
-// BlobStoreAdmin is a BlobStore that can also remove blobs
+// BlobAdmin is a BlobStore that can also remove blobs
 // usually an elevated piviledges operation that only a Garbage Collector needs to do based on certain policies
-type BlobStoreAdmin interface {
+type BlobAdmin interface {
 	BlobStore
 	// Remove the given key, returns an error is something goes wrong (if the key is not present it does NOT complain)
 	Remove(key Key) error
@@ -66,8 +66,8 @@ func NewFileBlobStore(dir string, hash crypto.Hash) BlobStore {
 	return NewFileBlobServer(dir, hash)
 }
 
-// NewFileBlobStore returns a files BlobStoreAdmin
-func NewFileBlobStoreAdmin(dir string, hash crypto.Hash) BlobStoreAdmin {
+// NewFileBlobAdmin returns a files BlobAdmin
+func NewFileBlobAdmin(dir string, hash crypto.Hash) BlobAdmin {
 	return NewFileBlobServer(dir, hash)
 }
 
@@ -76,7 +76,7 @@ func NewMemBlobStore(hash crypto.Hash) BlobStore {
 	return NewMemBlobServer(hash)
 }
 
-// NewMemBlobStore returns a files BlobStoreAdmin
-func NewMemBlobStoreAdmin(hash crypto.Hash) BlobStoreAdmin {
+// NewMemBlobAdmin returns a files BlobAdmin
+func NewMemBlobAdmin(hash crypto.Hash) BlobAdmin {
 	return NewMemBlobServer(hash)
 }

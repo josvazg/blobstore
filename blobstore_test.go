@@ -104,7 +104,7 @@ func TestFileReadsNWrites(t *testing.T) {
 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
 	dir := fileBlobs{""}.TmpKeyname(10)
 	os.Mkdir(dir, 0700)
-	fileBlobs := NewFileBlobStoreAdmin(dir, crypto.SHA1)
+	fileBlobs := NewFileBlobAdmin(dir, crypto.SHA1)
 	// exercise
 	readsNWrites(t, fileBlobs)
 	// cleanup
@@ -116,13 +116,13 @@ func TestFileReadsNWrites(t *testing.T) {
 // TestMemReadsNWrites test that the in-memory blobserver does its reads and writes as expected
 func TestMemReadsNWrites(t *testing.T) {
 	// setup
-	memBlobs := NewMemBlobStoreAdmin(crypto.SHA1)
+	memBlobs := NewMemBlobAdmin(crypto.SHA1)
 	// exercise
 	readsNWrites(t, memBlobs)
 }
 
 // readsNWrites exercises a read, write, read, write, remove, read sequence from testData into a BlobStoreAdmin
-func readsNWrites(t *testing.T, blobs BlobStoreAdmin) {
+func readsNWrites(t *testing.T, blobs BlobAdmin) {
 	for _, testCase := range testData {
 		expectedKey := toKeyOrDie(t, testCase.expectedHash)
 		// 1 read must fail
@@ -173,7 +173,7 @@ func readsNWrites(t *testing.T, blobs BlobStoreAdmin) {
 // TestMemList test that the in-memory list call returns all stored keys as expected
 func TestMemList(t *testing.T) {
 	// setup
-	memBlobs := NewMemBlobStoreAdmin(crypto.SHA1)
+	memBlobs := NewMemBlobAdmin(crypto.SHA1)
 	expectedKeys := buildExpectedKeysList()
 	// exercise
 	listChecks(t, expectedKeys, memBlobs)
