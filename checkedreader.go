@@ -24,7 +24,7 @@ func (cr *checkedReader) Read(buf []byte) (n int, err error) {
 	if err != nil && err == io.EOF {
 		actualKey := Key(cr.hasher.Sum(nil))
 		if !cr.key.Equals(actualKey) {
-			return n, fmt.Errorf("%s expected hash was %v but got %v", CorruptedBlobErrorPrefix, cr.key, actualKey)
+			return n, fmt.Errorf("%s expected hash was %v but got %v", corruptedBlobErrorPrefix, cr.key, actualKey)
 		}
 	}
 	return n, err

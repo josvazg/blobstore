@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	CorruptedBlobErrorPrefix = "Corrupted Blob:"
+	corruptedBlobErrorPrefix = "Corrupted Blob:"
 )
 
 // Key is the blob key type

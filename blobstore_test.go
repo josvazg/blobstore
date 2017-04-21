@@ -93,8 +93,8 @@ func TestCheckedReader(t *testing.T) {
 			toKeyOrDie(t, testCase.expectedHash),
 			sha1.New()}
 		err = readAll(badReader)
-		assert(strings.Contains(err.Error(), CorruptedBlobErrorPrefix), t,
-			"An %s error was expected, but we got %s instead", CorruptedBlobErrorPrefix, err)
+		assert(strings.Contains(err.Error(), corruptedBlobErrorPrefix), t,
+			"An %s error was expected, but we got %s instead", corruptedBlobErrorPrefix, err)
 	}
 }
 
