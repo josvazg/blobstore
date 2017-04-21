@@ -155,32 +155,32 @@ func readsNWrites(t *testing.T, blobs BlobAdmin) {
 }
 
 // TestFileList test that the persistent list call returns all stored keys as expected
-// func TestFileList(t *testing.T) {
-// 	// setup
-// 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
-// 	dir := fileBlobs{""}.TmpKeyname(10)
-// 	os.Mkdir(dir, 0700)
-// 	fileBlobs := NewFileBlobStore(dir, crypto.SHA1)
-// 	expectedKeys := buildExpectedKeysList()
-// 	// exercise
-// 	listChecks(t, expectedKeys, fileBlobs)
-// 	// cleanup
-// 	// Remove the root for the blob store filesystem
-// 	err := os.RemoveAll(dir)
-// 	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
-// }
+func TestFileList(t *testing.T) {
+	// setup
+	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
+	dir := fileBlobs{""}.TmpKeyname(10)
+	os.Mkdir(dir, 0700)
+	fileBlobs := NewFileBlobStore(dir, crypto.SHA1)
+	expectedKeys := buildExpectedKeys()
+	// exercise
+	listChecks(t, expectedKeys, fileBlobs)
+	// cleanup
+	// Remove the root for the blob store filesystem
+	err := os.RemoveAll(dir)
+	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
+}
 
 // TestMemList test that the in-memory list call returns all stored keys as expected
 func TestMemList(t *testing.T) {
 	// setup
 	memBlobs := NewMemBlobAdmin(crypto.SHA1)
-	expectedKeys := buildExpectedKeysList()
+	expectedKeys := buildExpectedKeys()
 	// exercise
 	listChecks(t, expectedKeys, memBlobs)
 }
 
 // listChecks execises the lists over a BlobStore
-func listChecks(t *testing.T, expectedKeys []string, blobs BlobStore) {
+func listChecks(t *testing.T, expectedKeys map[string]bool, blobs BlobStore) {
 	for _, testCase := range testData {
 		expectedKey := toKeyOrDie(t, testCase.expectedHash)
 		// 1 write must succeed and key must match
@@ -194,18 +194,17 @@ func listChecks(t *testing.T, expectedKeys []string, blobs BlobStore) {
 	for blobKey := range blobKeys {
 		assert(blobKey.err == nil, t, "Error in List stream: %s", blobKey.err)
 		key := strings.ToLower(blobKey.key.String())
-		assert(key == expectedKeys[i], t, "Next expected key in list was %s, but got %s", expectedKeys[i], key)
+		assert(expectedKeys[key], t, "Unexpected key: %s", key)
 		i++
 	}
 }
 
-// buildExpectedKeysList builds a ordered expected list of keys from testData
-func buildExpectedKeysList() []string {
-	expectedKeys := make([]string, len(testData))
-	for i, testCase := range testData {
-		expectedKeys[i] = testCase.expectedHash
+// buildExpectedKeys builds the set of expected list of keys from testData
+func buildExpectedKeys() map[string]bool {
+	expectedKeys := make(map[string]bool, len(testData))
+	for _, testCase := range testData {
+		expectedKeys[testCase.expectedHash] = true
 	}
-	sort.StringSlice(expectedKeys).Sort()
 	return expectedKeys
 }
 
