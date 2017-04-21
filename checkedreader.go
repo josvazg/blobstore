@@ -14,7 +14,8 @@ type checkedReader struct {
 	hasher hash.Hash
 }
 
-// Read will return an error prefixed by 'CorruptedBlobErrorPrefix' if the readed blob did not match the hash key
+// Read will return an error prefixed by 'CorruptedBlobErrorPrefix',
+// if the readed blob did not match the hash key
 func (cr *checkedReader) Read(buf []byte) (n int, err error) {
 	n, err = cr.Reader.Read(buf)
 	if n > 0 {
@@ -23,7 +24,7 @@ func (cr *checkedReader) Read(buf []byte) (n int, err error) {
 	if err != nil && err == io.EOF {
 		actualKey := Key(cr.hasher.Sum(nil))
 		if !cr.key.Equals(actualKey) {
-			return n, fmt.Errorf("%s expected hash was %v but got %v!!", CorruptedBlobErrorPrefix, cr.key, actualKey)
+			return n, fmt.Errorf("%s expected hash was %v but got %v", corruptedBlobErrorPrefix, cr.key, actualKey)
 		}
 	}
 	return n, err

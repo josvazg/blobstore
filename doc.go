@@ -1,5 +1,5 @@
 /*
-Package blobserver a Content Addressed basic service definition an implementation
+Package blobstore a Content Addressed basic service definition an implementation
 
 The normal BlobStore user interface allows just to:
 - Read a blob or stream of bytes given its content based hash key (for instance SHA-1 of all the bytes)
@@ -20,11 +20,10 @@ import (
 )
 
 const (
-	CorruptedBlobErrorPrefix = "Corrupted Blob:"
-	FilesAtOnce              = 10
+	corruptedBlobErrorPrefix = "Corrupted Blob:"
 )
 
-// A blob key
+// Key is the blob key type
 type Key []byte
 
 // String returns the hexadecimal string representation of the key
@@ -37,7 +36,7 @@ func (k Key) Equals(key Key) bool {
 	return bytes.Compare(k, key) == 0
 }
 
-// A Key or Error type for key listing
+// KeyOrError type for key listing
 type KeyOrError struct {
 	key Key
 	err error
@@ -54,9 +53,9 @@ type BlobStore interface {
 	List() <-chan KeyOrError
 }
 
-// BlobStoreAdmin is a BlobStore that can also remove blobs
+// BlobAdmin is a BlobStore that can also remove blobs
 // usually an elevated piviledges operation that only a Garbage Collector needs to do based on certain policies
-type BlobStoreAdmin interface {
+type BlobAdmin interface {
 	BlobStore
 	// Remove the given key, returns an error is something goes wrong (if the key is not present it does NOT complain)
 	Remove(key Key) error
@@ -67,8 +66,8 @@ func NewFileBlobStore(dir string, hash crypto.Hash) BlobStore {
 	return NewFileBlobServer(dir, hash)
 }
 
-// NewFileBlobStore returns a files BlobStoreAdmin
-func NewFileBlobStoreAdmin(dir string, hash crypto.Hash) BlobStoreAdmin {
+// NewFileBlobAdmin returns a files BlobAdmin
+func NewFileBlobAdmin(dir string, hash crypto.Hash) BlobAdmin {
 	return NewFileBlobServer(dir, hash)
 }
 
@@ -77,7 +76,7 @@ func NewMemBlobStore(hash crypto.Hash) BlobStore {
 	return NewMemBlobServer(hash)
 }
 
-// NewMemBlobStore returns a files BlobStoreAdmin
-func NewMemBlobStoreAdmin(hash crypto.Hash) BlobStoreAdmin {
+// NewMemBlobAdmin returns a files BlobAdmin
+func NewMemBlobAdmin(hash crypto.Hash) BlobAdmin {
 	return NewMemBlobServer(hash)
 }

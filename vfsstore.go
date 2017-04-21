@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-// VFS blob server implements a generic BlobServer on a Virtual Filesystem (VirtualFS)
+// VFSBlobServer implements a generic BlobServer on a Virtual Filesystem (VirtualFS)
 type VFSBlobServer struct {
 	VirtualFS
 	hash crypto.Hash
