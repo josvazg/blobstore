@@ -14,7 +14,8 @@ type checkedReader struct {
 	hasher hash.Hash
 }
 
-// Read will return an error prefixed by 'CorruptedBlobErrorPrefix' if the readed blob did not match the hash key
+// Read will return an error prefixed by 'CorruptedBlobErrorPrefix',
+// if the readed blob did not match the hash key
 func (cr *checkedReader) Read(buf []byte) (n int, err error) {
 	n, err = cr.Reader.Read(buf)
 	if n > 0 {

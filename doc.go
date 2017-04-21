@@ -1,5 +1,5 @@
 /*
-Package blobserver a Content Addressed basic service definition an implementation
+Package blobstore a Content Addressed basic service definition an implementation
 
 The normal BlobStore user interface allows just to:
 - Read a blob or stream of bytes given its content based hash key (for instance SHA-1 of all the bytes)
@@ -24,7 +24,7 @@ const (
 	FilesAtOnce              = 10
 )
 
-// A blob key
+// Key is the blob key type
 type Key []byte
 
 // String returns the hexadecimal string representation of the key
@@ -37,7 +37,7 @@ func (k Key) Equals(key Key) bool {
 	return bytes.Compare(k, key) == 0
 }
 
-// A Key or Error type for key listing
+// KeyOrError type for key listing
 type KeyOrError struct {
 	key Key
 	err error
