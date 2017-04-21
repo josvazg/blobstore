@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	INITIAL_MEM_BUFFER = 10
+	initialMemBuffer = 10
 )
 
 // NewMemBlobServer returns a VFSBlobServer using a fileBlobs, that is on top of the os files
@@ -42,7 +42,7 @@ func (mem *memBlobs) Open(key string) (io.ReadCloser, error) {
 
 // Create a key to set its contents
 func (mem *memBlobs) Create(keyname string) (io.WriteCloser, error) {
-	buf := make([]byte, 0, INITIAL_MEM_BUFFER)
+	buf := make([]byte, 0, initialMemBuffer)
 	mem.blobs[keyname] = bytes.NewBuffer(buf)
 	mem.insert(keyname)
 	return nopWriterCloser(mem.blobs[keyname]), nil

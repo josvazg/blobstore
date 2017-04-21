@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	DEFAULT_OPEN_PERMS = 0750
-	VFS_ROOT           = ""
+	defaultPerms = 0750
+	vfsRoot      = ""
+	filesAtOnce  = 10
 )
 
 // NewFileBlobServer returns a VFSBlobServer using a fileBlobs, that is on top of the os files
@@ -32,7 +33,7 @@ func (vfs fileBlobs) Open(key string) (io.ReadCloser, error) {
 
 // Create a file to write a key's contents for the first time
 func (vfs fileBlobs) Create(key string) (io.WriteCloser, error) {
-	return os.OpenFile(key, os.O_CREATE|os.O_WRONLY, DEFAULT_OPEN_PERMS)
+	return os.OpenFile(key, os.O_CREATE|os.O_WRONLY, defaultPerms)
 }
 
 // Delete a key & contents from the FS
@@ -48,7 +49,7 @@ func (vfs fileBlobs) Exists(key string) bool {
 
 // Rename a key, usually only used once, when the contents are done writting and the correspoding hash key is known
 func (vfs fileBlobs) Rename(oldkey, newkey string) error {
-	err := os.MkdirAll(filepath.Dir(newkey), DEFAULT_OPEN_PERMS)
+	err := os.MkdirAll(filepath.Dir(newkey), defaultPerms)
 	if err == nil {
 		err = os.Rename(oldkey, newkey)
 	}
@@ -57,12 +58,12 @@ func (vfs fileBlobs) Rename(oldkey, newkey string) error {
 
 // ListTo lists all present keys in sort order to the keys channel
 func (vfs fileBlobs) ListTo(keys chan<- KeyOrError, acceptor func(string) Key) bool {
-	return vfs.listTo(keys, acceptor, VFS_ROOT)
+	return vfs.listTo(keys, acceptor, vfsRoot)
 }
 
 // listTo is the internal recursive implementation of ListTo list key names from recursive directories
 func (vfs fileBlobs) listTo(keys chan<- KeyOrError, acceptor func(string) Key, dir string) bool {
-	if dir == VFS_ROOT { // start at the root dir
+	if dir == vfsRoot { // start at the root dir
 		dir = vfs.dir
 	}
 	root, err := os.Open(dir)
@@ -70,7 +71,7 @@ func (vfs fileBlobs) listTo(keys chan<- KeyOrError, acceptor func(string) Key, d
 		return failKeyOrError(keys, err)
 	}
 	for {
-		fileInfos, err := root.Readdir(FilesAtOnce)
+		fileInfos, err := root.Readdir(filesAtOnce)
 		if err == io.EOF { // on EOF we are done
 			return true
 		} else if err != nil {

@@ -21,7 +21,6 @@ import (
 
 const (
 	CorruptedBlobErrorPrefix = "Corrupted Blob:"
-	FilesAtOnce              = 10
 )
 
 // Key is the blob key type
