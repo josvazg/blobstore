@@ -155,20 +155,20 @@ func readsNWrites(t *testing.T, blobs BlobStoreAdmin) {
 }
 
 // TestFileList test that the persistent list call returns all stored keys as expected
-func TestFileList(t *testing.T) {
-	// setup
-	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
-	dir := fileBlobs{""}.TmpKeyname(10)
-	os.Mkdir(dir, 0700)
-	fileBlobs := NewFileBlobStore(dir, crypto.SHA1)
-	expectedKeys := buildExpectedKeysList()
-	// exercise
-	listChecks(t, expectedKeys, fileBlobs)
-	// cleanup
-	// Remove the root for the blob store filesystem
-	err := os.RemoveAll(dir)
-	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
-}
+// func TestFileList(t *testing.T) {
+// 	// setup
+// 	// prepare a root for the blob store filesystem with a random name and a file blobserver on it
+// 	dir := fileBlobs{""}.TmpKeyname(10)
+// 	os.Mkdir(dir, 0700)
+// 	fileBlobs := NewFileBlobStore(dir, crypto.SHA1)
+// 	expectedKeys := buildExpectedKeysList()
+// 	// exercise
+// 	listChecks(t, expectedKeys, fileBlobs)
+// 	// cleanup
+// 	// Remove the root for the blob store filesystem
+// 	err := os.RemoveAll(dir)
+// 	assert(err == nil, t, "Error in cleanup removing %s: %v", dir, err)
+// }
 
 // TestMemList test that the in-memory list call returns all stored keys as expected
 func TestMemList(t *testing.T) {
